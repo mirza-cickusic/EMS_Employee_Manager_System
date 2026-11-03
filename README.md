@@ -1,4 +1,4 @@
-# Sistem za upravljanje zaposlenicima (Employee Management System)
+# Sistem za upravljanje zaposlenicima (Employee Menager System)
 
 ## Opis projekta
 
