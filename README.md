@@ -1,4 +1,4 @@
-# Sistem za upravljanje zaposlenicima (Employee Menager System)
+# Sistem za upravljanje zaposlenicima (Employee Manager System)
 
 ## Opis projekta
 
@@ -97,7 +97,7 @@ IPI Akademija Tuzla
 *Fakultetska vježba iz programiranja u Javi – Sistem za upravljanje zaposlenicima.*
 
 
-# Employee Management System
+# Employee Manager System
 
 ## Project Description
 
