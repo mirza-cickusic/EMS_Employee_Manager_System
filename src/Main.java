@@ -25,6 +25,8 @@ import java.util.Comparator;
 
 // Uvoz interfejsa List koji predstavlja listu elemenata.
 import java.util.List;
+import java.time.LocalDate;
+import java.time.Period;
 
 
 // ==========================================
@@ -33,7 +35,7 @@ import java.util.List;
 
 // Definisanje osnovne klase Employee koja predstavlja zaposlenika.
 // Ostale klase Manager i Intern nasljeđuju njene atribute i metode.
-class Employee {
+class Employee implements Comparable<Employee>, Cloneable {
 
     // Privatni atribut koji čuva ime zaposlenika.
     // private znači da mu se ne može direktno pristupiti izvan klase.
@@ -45,11 +47,20 @@ class Employee {
     // Privatni atribut koji čuva osnovnu platu zaposlenika.
     private double salary;
 
+    // Datum kada je zaposlenik počeo raditi u firmi.
+    private LocalDate hireDay;
+
 
     // Konstruktor bazne klase Employee.
     // Poziva se prilikom kreiranja novog objekta klase Employee.
     // Parametri omogućavaju unos imena, ID broja i plate.
     public Employee(String name, int id, double salary) {
+
+        this(name, id, salary, LocalDate.now());
+    }
+
+    // Konstruktor koji omogućava unos stvarnog datuma zaposlenja.
+    public Employee(String name, int id, double salary, LocalDate hireDay) {
 
         // Dodjeljivanje vrijednosti parametra name atributu objekta.
         // this.name označava atribut trenutnog objekta.
@@ -60,6 +71,7 @@ class Employee {
 
         // Dodjeljivanje osnovne plate zaposlenika.
         this.salary = salary;
+        this.hireDay = hireDay;
     }
 
 
@@ -81,6 +93,13 @@ class Employee {
         return salary;
     }
 
+    public LocalDate getHireDay() { return hireDay; }
+
+    // Broj punih godina od datuma zaposlenja do danas.
+    public int getYearsOfService() {
+        return Math.max(0, Period.between(hireDay, LocalDate.now()).getYears());
+    }
+
 
     // Metoda work() predstavlja osnovnu aktivnost zaposlenika.
     // U ovom slučaju ispisuje poruku da zaposlenik radi.
@@ -92,7 +111,20 @@ class Employee {
     // Metoda getDetails() vraća tekstualni prikaz osnovnih podataka zaposlenika.
     // Podaci se spajaju pomoću operatora +.
     public String getDetails() {
-        return "ID: " + id + ", Name: " + name + ", Salary: $" + salary;
+        return "ID: " + id + ", Name: " + name + ", Salary: $" + salary
+                + ", Hire day: " + hireDay + ", Years at firm: " + getYearsOfService();
+    }
+
+    // Prirodni redoslijed zaposlenika je po ID-u.
+    @Override
+    public int compareTo(Employee other) { return Integer.compare(this.id, other.id); }
+
+    // Sva polja su primitive vrijednosti ili immutable objekti (String, LocalDate),
+    // zato je kopija koju daje Object.clone() sigurna i nezavisna.
+    @Override
+    public Employee clone() {
+        try { return (Employee) super.clone(); }
+        catch (CloneNotSupportedException e) { throw new AssertionError(e); }
     }
 }
 
@@ -117,6 +149,11 @@ class Manager extends Employee {
         super(name, id, salary);
 
         // Dodjeljivanje vrijednosti bonusa atributu klase Manager.
+        this.bonus = bonus;
+    }
+
+    public Manager(String name, int id, double salary, double bonus, LocalDate hireDay) {
+        super(name, id, salary, hireDay);
         this.bonus = bonus;
     }
 
@@ -153,6 +190,9 @@ class Manager extends Employee {
         // Na postojeće podatke dodaje se i podatak o bonusu.
         return super.getDetails() + ", Bonus: $" + bonus;
     }
+
+    @Override
+    public Manager clone() { return (Manager) super.clone(); }
 }
 
 
@@ -164,7 +204,10 @@ class Manager extends Employee {
 // Nasljeđuje osnovne karakteristike iz klase Employee.
 class Intern extends Employee {
 
-    // Privatni atribut koji čuva naziv obrazovne ustanove praktikanta.
+    // Trajanje prakse u mjesecima.
+    private int duration;
+
+    // Škola ostavljena radi kompatibilnosti sa starim podacima.
     private String school;
 
 
@@ -176,7 +219,21 @@ class Intern extends Employee {
 
         // Dodjeljivanje naziva obrazovne ustanove atributu school.
         this.school = school;
+        this.duration = 6; // trajanje podrazumijevano za stare zapise
     }
+
+    public Intern(String name, int id, double salary, int duration) {
+        this(name, id, salary, duration, "Nije navedeno", LocalDate.now());
+    }
+
+    public Intern(String name, int id, double salary, int duration, String school, LocalDate hireDay) {
+        super(name, id, salary, hireDay);
+        if (duration <= 0) throw new IllegalArgumentException("Trajanje prakse mora biti veće od nule.");
+        this.duration = duration;
+        this.school = school == null ? "Nije navedeno" : school;
+    }
+
+    public int getDuration() { return duration; }
 
 
     // Getter metoda koja vraća naziv obrazovne ustanove praktikanta.
@@ -201,8 +258,11 @@ class Intern extends Employee {
 
         // Preuzimaju se osnovni podaci iz bazne klase.
         // Na njih se dodaje naziv obrazovne ustanove.
-        return super.getDetails() + ", School: " + school;
+        return super.getDetails() + ", Internship duration: " + duration + " months, School: " + school;
     }
+
+    @Override
+    public Intern clone() { return (Intern) super.clone(); }
 }
 
 
@@ -233,17 +293,17 @@ public class Main {
 
         // Kreiranje običnog zaposlenika i dodavanje u listu.
         // Parametri predstavljaju ime, ID i osnovnu platu.
-        employees.add(new Employee("Alice", 101, 50000));
+        employees.add(new Employee("Alice", 101, 50000, LocalDate.of(2020, 2, 10)));
 
         // Kreiranje menadžera i dodavanje u listu.
         // Pored osnovnih podataka, menadžer ima i bonus.
-        employees.add(new Manager("Bob", 102, 80000, 15000));
+        employees.add(new Manager("Bob", 102, 80000, 15000, LocalDate.of(2018, 5, 1)));
 
         // Kreiranje drugog menadžera s drugačijim podacima.
-        employees.add(new Manager("Charlie", 103, 90000, 20000));
+        employees.add(new Manager("Charlie", 103, 90000, 20000, LocalDate.of(2016, 8, 15)));
 
         // Kreiranje praktikanta koji je povezan s ustanovom IPI Akademija.
-        employees.add(new Intern("Mirza", 104, 25000, "IPI Akademija"));
+        employees.add(new Intern("Mirza", 104, 25000, 6, "IPI Akademija", LocalDate.of(2025, 10, 1)));
 
 
         // Ispis naslova prvog koraka programa.
@@ -319,6 +379,22 @@ public class Main {
 
         // Pozivanje metode koja sortira zaposlenike prema ukupnoj zaradi silazno.
         sortEmployeesBySalary(employees);
+
+        // Prirodno sortiranje preko Comparable<Employee> (po ID-u).
+        Collections.sort(employees);
+        System.out.println("\n[Zadatak 2 sa slike] Sortiranje po ID-u:");
+        for (Employee emp : employees) System.out.println(emp.getDetails());
+
+        // Dodatno sortiranje po datumu zaposlenja.
+        sortEmployeesByHireDay(employees);
+
+        // Demonstracija kloniranja, pretrage po imenu i pretrage po ID-u.
+        if (!employees.isEmpty()) {
+            Employee kopija = employees.get(0).clone();
+            System.out.println("\nKlonirani zaposlenik: " + kopija.getDetails());
+        }
+        findEmployee(employees, "Mirza");
+        findEmployee(employees, "102");
     }
 
 
@@ -353,7 +429,7 @@ public class Main {
 
                 // split(",") dijeli pročitanu liniju na dijelove koristeći zarez.
                 // Dobijeni dijelovi smještaju se u niz tokens.
-                String[] tokens = line.split(",");
+                String[] tokens = line.split(",", -1);
 
                 // Prvi element niza predstavlja tip zaposlenika.
                 String tip = tokens[0];
@@ -378,7 +454,8 @@ public class Main {
                     case "EMPLOYEE":
 
                         // Kreiranje objekta Employee i dodavanje u listu.
-                        employees.add(new Employee(name, id, salary));
+                        employees.add(new Employee(name, id, salary,
+                                tokens.length > 4 && isDate(tokens[4]) ? LocalDate.parse(tokens[4]) : LocalDate.now()));
 
                         // break prekida izvršavanje switch bloka.
                         break;
@@ -389,10 +466,13 @@ public class Main {
 
                         // Peti element niza sadrži bonus menadžera.
                         // Tekstualna vrijednost pretvara se u decimalni broj.
-                        double bonus = Double.parseDouble(tokens[4]);
+                        boolean managerHasDate = tokens.length > 5 && isDate(tokens[4]);
+                        double bonus = Double.parseDouble(tokens[managerHasDate ? 5 : 4]);
 
                         // Kreiranje objekta Manager i dodavanje u listu.
-                        employees.add(new Manager(name, id, salary, bonus));
+                        employees.add(managerHasDate
+                                ? new Manager(name, id, salary, bonus, LocalDate.parse(tokens[4]))
+                                : new Manager(name, id, salary, bonus));
 
                         // Prekid switch bloka.
                         break;
@@ -402,10 +482,17 @@ public class Main {
                     case "INTERN":
 
                         // Peti element niza sadrži naziv obrazovne ustanove.
-                        String school = tokens[4];
+                        boolean internHasDate = tokens.length > 5 && isDate(tokens[4]);
 
                         // Kreiranje objekta Intern i dodavanje u listu.
-                        employees.add(new Intern(name, id, salary, school));
+                        if (internHasDate) {
+                            int duration = Integer.parseInt(tokens[5]);
+                            String school = tokens.length > 6 ? tokens[6] : "Nije navedeno";
+                            employees.add(new Intern(name, id, salary, duration, school, LocalDate.parse(tokens[4])));
+                        } else {
+                            // U starom formatu peto polje je naziv škole.
+                            employees.add(new Intern(name, id, salary, tokens.length > 4 ? tokens[4] : "Nije navedeno"));
+                        }
 
                         // Prekid switch bloka.
                         break;
@@ -431,11 +518,17 @@ public class Main {
             // IOException označava grešku pri radu s datotekom.
             // ArrayIndexOutOfBoundsException označava pristup nepostojećem elementu niza.
             // NumberFormatException označava neispravnu pretvorbu teksta u broj.
-        } catch (IOException | ArrayIndexOutOfBoundsException | NumberFormatException e) {
+        } catch (IOException | RuntimeException e) {
 
             // getMessage() vraća opis nastale greške kako bi korisnik znao šta se dogodilo.
             System.out.println("Greška prilikom čitanja datoteke: " + e.getMessage());
         }
+    }
+
+    // Provjerava da li tekst ima ISO format datuma (YYYY-MM-DD).
+    private static boolean isDate(String value) {
+        try { LocalDate.parse(value); return true; }
+        catch (RuntimeException e) { return false; }
     }
 
 
@@ -467,7 +560,7 @@ public class Main {
                     // Upis podataka menadžera u datoteku.
                     // MANAGER je oznaka tipa, a ostali podaci odvojeni su zarezima.
                     // getBonus() preuzima dodatni bonus menadžera.
-                    writer.write("MANAGER," + m.getName() + "," + m.getId() + "," + m.getSalary() + "," + m.getBonus() + "\n");
+                    writer.write("MANAGER," + m.getName() + "," + m.getId() + "," + m.getSalary() + "," + m.getHireDay() + "," + m.getBonus() + System.lineSeparator());
 
 
                     // Ako objekat nije Manager, provjerava se da li je Intern.
@@ -480,7 +573,7 @@ public class Main {
                     // Upis podataka praktikanta u datoteku.
                     // INTERN označava vrstu zaposlenika.
                     // Pored osnovnih podataka upisuje se i naziv škole.
-                    writer.write("INTERN," + i.getName() + "," + i.getId() + "," + i.getSalary() + "," + i.getSchool() + "\n");
+                    writer.write("INTERN," + i.getName() + "," + i.getId() + "," + i.getSalary() + "," + i.getHireDay() + "," + i.getDuration() + "," + i.getSchool() + System.lineSeparator());
 
 
                     // Ako objekat nije ni Manager ni Intern, tretira se kao Employee.
@@ -488,7 +581,7 @@ public class Main {
 
                     // Upis osnovnih podataka običnog zaposlenika.
                     // EMPLOYEE predstavlja oznaku njegove vrste.
-                    writer.write("EMPLOYEE," + emp.getName() + "," + emp.getId() + "," + emp.getSalary() + "\n");
+                    writer.write("EMPLOYEE," + emp.getName() + "," + emp.getId() + "," + emp.getSalary() + "," + emp.getHireDay() + System.lineSeparator());
                 }
             }
 
@@ -601,6 +694,31 @@ public class Main {
         }
     }
 
+
+    // ==========================================
+    // SORTIRANJE PO DATUMU ZAPOSLENJA I PRETRAGA
+    // ==========================================
+
+    public static void sortEmployeesByHireDay(List<Employee> employees) {
+        Collections.sort(employees, Comparator.comparing(Employee::getHireDay));
+        System.out.println("\nZaposlenici sortirani po datumu zaposlenja:");
+        for (Employee emp : employees)
+            System.out.println(emp.getHireDay() + " - " + emp.getName() + " (" + emp.getYearsOfService() + " godina)");
+    }
+
+    // Pretražuje listu po punom imenu ili ID-u i ispisuje pronađenog zaposlenika.
+    public static Employee findEmployee(List<Employee> employees, String query) {
+        for (Employee emp : employees) {
+            if (emp.getName().equalsIgnoreCase(query.trim())
+                    || String.valueOf(emp.getId()).equals(query.trim())) {
+                System.out.println("\nPronađen zaposlenik za '" + query + "':");
+                System.out.println(emp.getDetails());
+                return emp;
+            }
+        }
+        System.out.println("\nZaposlenik nije pronađen: " + query);
+        return null;
+    }
 
     // ==========================================
     // ZADATAK 5: PRONALAŽENJE ZAPOSLENIKA MJESECA
